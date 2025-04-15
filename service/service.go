@@ -2,17 +2,16 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"Sinekod/repository"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
-
 var secretKey = []byte("TIMOFEY_NE_LUBIT_GRECHKU")
-
-
 
 type Service struct {
 	repository *repository.Repository
@@ -24,26 +23,60 @@ func NewService(repo *repository.Repository) *Service {
 	}
 }
 
-func (srv Service) Get_json_id(id int) []byte { //любой вывод json id
-	var choto = map[string]int{"id": id}
-	data, err := json.Marshal(choto)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return data
-}
-
-func (srv Service) Registration(r *http.Request) ([]byte, string) {
+func (srv Service) Registration(r *http.Request) (string, string, error) {
 	var temp struct {
 		UserName string
 		Password string
 	}
+
 	err := json.NewDecoder(r.Body).Decode(&temp)
 	if err != nil {
-		return nil, "400"
+		return "", "", err
 	}
 
-	id := srv.repository.Registration(temp)
+	srv.repository.Registration(temp)
 
-	return srv.Get_json_id(id), "201"
+	AccessToken, _ := srv.CreateAcessToken(temp)
+	RefreshToken, _ := srv.CreateRefreshToken(temp)
+
+	return AccessToken, RefreshToken, nil
+}
+
+func (srv Service) CreateAcessToken(temp struct {
+	UserName string
+	Password string
+}) (string, error) {
+	AccessCclaims := jwt.MapClaims{
+		"UserName": temp.UserName,
+		"Password": temp.Password,
+		"exp":      time.Now().Add(time.Minute * 15).Unix(),
+	}
+
+	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, AccessCclaims)
+
+	return AccessToken.SignedString(secretKey)
+}
+
+func (srv Service) CreateRefreshToken(temp struct {
+	UserName string
+	Password string
+}) (string, error) {
+	RefreshClaims := jwt.MapClaims{
+		"UserName": temp.UserName,
+		"Password": temp.Password,
+		"exp":      time.Now().Add(time.Hour * 168).Unix(),
+	}
+
+	RefreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, RefreshClaims)
+
+	return RefreshToken.SignedString(secretKey)
+}
+
+func (srv Service) GetTokens(r *http.Request) (string, string, error) {
+	accessToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	refreshCookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		return "", "", err
+	}
+	return accessToken, refreshCookie.Value, nil
 }

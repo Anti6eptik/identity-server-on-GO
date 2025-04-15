@@ -27,12 +27,9 @@ func NewDB() *sql.DB {
 func (r Repository) Registration(new_user struct {
 	UserName string
 	Password string
-}) int {
-	result, err := r.DB.Exec("INSERT INTO users (UserName, Password) VALUES ($1)", new_user.UserName, new_user.Password)
+}) {
+	_, err := r.DB.Exec("INSERT INTO users (UserName, Password) VALUES ($1, $2)", new_user.UserName, new_user.Password)
 	if err != nil {
 		panic(err)
 	}
-	id, _ := result.LastInsertId()
-
-	return int(id)
 }

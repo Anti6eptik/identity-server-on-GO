@@ -22,11 +22,18 @@ func (c Controller) InfoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c Controller) RegistrationHandler(w http.ResponseWriter, r *http.Request) {
-	array, code := c.Service.Registration(r)
-	if code == "201" {
-		w.Write(array)
-		w.WriteHeader(http.StatusCreated)
+	AccessToken, RefreshToken, err := c.Service.Registration(r)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 	} else {
-		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Authorization", "Bearer "+AccessToken)
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    RefreshToken,
+			HttpOnly: true,
+			Secure:   true,
+			Path:     "/auth/refresh",
+			MaxAge:   60 * 60 * 24 * 7,
+		})
 	}
 }
