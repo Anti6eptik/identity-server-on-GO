@@ -6,7 +6,13 @@ import (
 	"net/http"
 
 	"Sinekod/repository"
+	"github.com/golang-jwt/jwt/v5"
 )
+
+
+var secretKey = []byte("TIMOFEY_NE_LUBIT_GRECHKU")
+
+
 
 type Service struct {
 	repository *repository.Repository
@@ -29,6 +35,7 @@ func (srv Service) Get_json_id(id int) []byte { //любой вывод json id
 
 func (srv Service) Registration(r *http.Request) ([]byte, string) {
 	var temp struct {
+		UserName string
 		Password string
 	}
 	err := json.NewDecoder(r.Body).Decode(&temp)

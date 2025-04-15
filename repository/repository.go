@@ -25,9 +25,10 @@ func NewDB() *sql.DB {
 }
 
 func (r Repository) Registration(new_user struct {
+	UserName string
 	Password string
 }) int {
-	result, err := r.DB.Exec("INSERT INTO users (Password) VALUES ($1)", new_user.Password)
+	result, err := r.DB.Exec("INSERT INTO users (UserName, Password) VALUES ($1)", new_user.UserName, new_user.Password)
 	if err != nil {
 		panic(err)
 	}
