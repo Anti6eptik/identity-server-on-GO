@@ -1,4 +1,4 @@
-module C/Users/T/identity-server-on-GO
+module Sinekod
 
 go 1.24.1
 
