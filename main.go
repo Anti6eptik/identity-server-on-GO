@@ -30,7 +30,7 @@ func main() {
 
 		ImportantInfo := router.Host("localhost:8080").Subrouter()
 		ImportantInfo.Use(controller.Service.AuthMiddleware)
-		ImportantInfo.HandleFunc("/info", controller.InfoHandler)
+		ImportantInfo.HandleFunc("/info", controller.InfoHandler).Methods("GET")
 
 		fmt.Println("Server listening...")
 		http.ListenAndServe(":8080", router)
