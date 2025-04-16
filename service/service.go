@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"fmt"
 
 	"Sinekod/repository"
 
@@ -73,11 +74,20 @@ func (srv Service) CreateRefreshToken(temp struct {
 }
 
 func (srv Service) GetTokens(r *http.Request) (*jwt.Token, *jwt.Token, error) {
-	AccessTokenString := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-	RefreshCookieString, err := r.Cookie("refresh_token")
-	if err != nil {
-		return nil, nil, err
-	}
+    authHeader := r.Header.Get("Authorization")
+    if authHeader == "" {
+        return nil, nil, fmt.Errorf("Нет заголовка")
+    }
+    
+    AccessTokenString := strings.TrimPrefix(authHeader, "Bearer ")
+    if AccessTokenString == authHeader {
+        return nil, nil, fmt.Errorf("Нет Bearer")
+    }
+
+    RefreshCookieString, err := r.Cookie("refresh_token")
+    if err != nil {
+        return nil, nil, fmt.Errorf("Тотальное отсутствие куки", err)
+    }
 
 	AccessToken, err := srv.ParseToken(AccessTokenString)
 	if err != nil {
