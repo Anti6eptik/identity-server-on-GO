@@ -98,62 +98,72 @@ func (srv Service) ParseToken(tokenString string) (*jwt.Token, error) {
     })
 }
 
-func (srv Service) AuthMiddleware(next http.Handler) http.Handler{
-	return http.HandleFunc(func(w http.ResponseWriter, r *http.Request){
-		AccessToken, RefreshToken, err := srv.GetTokens(r)
-		if err != nil{
-			panic(err)
-		}
-		if AccessToken.Valid{
-			next(w, r)
-		} else if RefreshToken.Valid{
-			var temp struct {
-				UserName string
-				Password string
-			}
+func (srv Service) AuthMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        AccessToken, RefreshToken, err := srv.GetTokens(r)
+        if err != nil {
+            http.Redirect(w, r, "/auth", http.StatusFound)
+            return
+        }
 
-			claims, ok := RefreshToken.Claims.(jwt.MapClaims)
-			if !ok{
-				panic("МЫ НЕ МОЖЕМ ВЫТАЩИТЬ КЛАЙМЫ")
-			}
+        if AccessToken.Valid {
+            next.ServeHTTP(w, r)
+            return
+        }
 
-			UserName, ok := claims["UserName"]
-			if !ok{
-				panic("МЫ НЕ МОЖЕМ ВЫТАЩИТЬ UserName")
-			}
+        if RefreshToken.Valid {
+            claims, ok := RefreshToken.Claims.(jwt.MapClaims)
+            if !ok {
+                http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+                return
+            }
 
-			Password, ok := claims["Password"]
-			if !ok{
-				panic("МЫ НЕ МОЖЕМ ВЫТАЩИТЬ Password")
-			}
+            userName, ok := claims["UserName"].(string)
+            if !ok {
+                http.Error(w, "Invalid UserName in token", http.StatusUnauthorized)
+                return
+            }
 
-			temp.UserName = UserName.(string)
-			temp.Password = Password.(string)
+            password, ok := claims["Password"].(string)
+            if !ok {
+                http.Error(w, "Invalid Password in token", http.StatusUnauthorized)
+                return
+            }
 
-			AccessToken, _ := srv.CreateAcessToken(temp)
-			RefreshToken, _ := srv.CreateRefreshToken(temp)
+            temp := struct {
+                UserName string
+                Password string
+            }{
+                UserName: userName,
+                Password: password,
+            }
 
-			w.Header().Set("Authorization", "Bearer "+AccessToken)
-			http.SetCookie(w, &http.Cookie{
-				Name:     "refresh_token",
-				Value:    RefreshToken,
-				HttpOnly: true,
-				Secure:   true,
-				Path:     "/auth/refresh",
-				MaxAge:   60 * 60 * 24 * 7,
-			})
+            newAccessToken, err := srv.CreateAcessToken(temp)
+            if err != nil {
+                http.Error(w, "Failed to create access token", http.StatusInternalServerError)
+                return
+            }
 
+            newRefreshToken, err := srv.CreateRefreshToken(temp)
+            if err != nil {
+                http.Error(w, "Failed to create refresh token", http.StatusInternalServerError)
+                return
+            }
 
-		} else{
-			http.Redirect(w, r, "/auth", http.StatusFound)
-		}
-	})
-}
+            w.Header().Set("Authorization", "Bearer "+newAccessToken)
+            http.SetCookie(w, &http.Cookie{
+                Name:     "refresh_token",
+                Value:    newRefreshToken,
+                HttpOnly: true,
+                Secure:   true,
+                Path:     "/",
+                MaxAge:   60 * 60 * 24 * 7,
+            })
 
-func (srv Service) Auth(){
-	var temp struct{
-		UserName string
-		Password string
-	}
-	if srv.repository.Auth()
+            next.ServeHTTP(w, r)
+            return
+        }
+
+        http.Redirect(w, r, "/auth", http.StatusFound)
+    })
 }
