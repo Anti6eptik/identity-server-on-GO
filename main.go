@@ -29,7 +29,7 @@ func main() {
 		router.HandleFunc("/auth", controller.AuthHandler).Methods("POST")
 
 		ImportantInfo := router.Host("localhost:8080").Subrouter()
-
+		ImportantInfo.Use(controller.Service.AuthMiddleware)
 		ImportantInfo.HandleFunc("/info", controller.InfoHandler)
 
 		fmt.Println("Server listening...")

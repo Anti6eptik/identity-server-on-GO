@@ -37,3 +37,7 @@ func (c Controller) RegistrationHandler(w http.ResponseWriter, r *http.Request) 
 		})
 	}
 }
+
+func (c Controller) AuthHandler(w http.ResponseWriter, r *http.Request) {
+
+}

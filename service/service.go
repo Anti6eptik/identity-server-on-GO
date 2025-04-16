@@ -149,3 +149,11 @@ func (srv Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc{
 		}
 	}
 }
+
+func (srv Service) Auth(){
+	var temp struct{
+		UserName string
+		Password string
+	}
+	if srv.repository.Auth()
+}
