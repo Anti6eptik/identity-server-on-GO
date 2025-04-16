@@ -45,11 +45,10 @@ func (r Repository) Auth(user struct {
 	row := r.DB.QueryRow("SELECT * FROM users WHERE UserName=$1, Password=$2", user.UserName, user.Password)
 	err := row.Scan(&temp.UserName, &temp.Password)
 	if err != nil {
-		panic(err)
-	}
-	if temp == user {
-		return true
-	} else {
 		return false
 	}
+	if temp == user{
+		return true
+	}
+	return false
 }
