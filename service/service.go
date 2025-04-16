@@ -145,7 +145,7 @@ func (srv Service) AuthMiddleware(next http.Handler) http.Handler{
 
 
 		} else{
-			
+			// redirect
 		}
 	})
 }
