@@ -39,5 +39,6 @@ func (c Controller) RegistrationHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c Controller) AuthHandler(w http.ResponseWriter, r *http.Request) {
-
+	c.Service.Auth(w, r)
+	w.WriteHeader(http.StatusOK)
 }
