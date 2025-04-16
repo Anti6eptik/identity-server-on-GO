@@ -33,8 +33,8 @@ func (c Controller) PostRegistrationHandler(w http.ResponseWriter, r *http.Reque
 			Name:     "refresh_token",
 			Value:    RefreshToken,
 			HttpOnly: true,
-			Secure:   true,
-			Path:     "/auth/refresh",
+			// Secure:   false, // Для локального тестирования
+			Path:     "/",
 			MaxAge:   60 * 60 * 24 * 7,
 		})
 	}
@@ -45,3 +45,16 @@ func (c Controller) PostAuthHandler(w http.ResponseWriter, r *http.Request) {
 	c.Service.Auth(w, r)
 	w.WriteHeader(http.StatusOK)
 }
+
+
+// Реквест не должен уходить из контроллера декодирование на уровне контроллера
+// Secure не работает на нашем 
+// Access токен передаем через json в теле ответа, модель токен: response
+// посмотри код в бан скваде
+// EXPIRES - время жизни
+// MaxAge - максимальное время жизни
+// пофиксиить куки, кеод в банскваде
+// Перед возвратом модели access токена надо написать w.Header().Set("Content-Type", "application/json")
+// Добавить больше ретурнов
+// убрать пароль из клеймов это свободная информация
+// Сменить хост на префикс

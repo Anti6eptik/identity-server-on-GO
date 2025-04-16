@@ -53,6 +53,8 @@ func (srv Service) CreateAcessToken(temp struct {
 		"exp":      time.Now().Add(time.Minute * 15).Unix(),
 	}
 
+	fmt.Print(AccessCclaims)
+
 	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, AccessCclaims)
 
 	return AccessToken.SignedString(secretKey)
@@ -86,6 +88,7 @@ func (srv Service) GetTokens(r *http.Request) (*jwt.Token, *jwt.Token, error) {
 
     RefreshCookieString, err := r.Cookie("refresh_token")
     if err != nil {
+		fmt.Print(err)
         return nil, nil, err
     }
 
