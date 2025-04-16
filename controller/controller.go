@@ -16,12 +16,22 @@ func NewController(service *service.Service) *Controller {
 	}
 }
 
+func (c Controller) HomeHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "templates/index.html")
+}
+
+
+
 func (c Controller) InfoHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Important Info!")
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c Controller) RegistrationHandler(w http.ResponseWriter, r *http.Request) {
+func (c Controller) GetRegistrationHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "templates/reg.html")
+}
+
+func (c Controller) PostRegistrationHandler(w http.ResponseWriter, r *http.Request) {
 	AccessToken, RefreshToken, err := c.Service.Registration(r)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -38,7 +48,12 @@ func (c Controller) RegistrationHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (c Controller) AuthHandler(w http.ResponseWriter, r *http.Request) {
+func (c Controller) GetAuthHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "templates/auth.html")
+}
+
+
+func (c Controller) PostAuthHandler(w http.ResponseWriter, r *http.Request) {
 	c.Service.Auth(w, r)
 	w.WriteHeader(http.StatusOK)
 }

@@ -24,9 +24,13 @@ func main() {
 	container.Invoke(func(controller *controller.Controller) {
 		router := mux.NewRouter()
 
-		router.HandleFunc("/registration", controller.RegistrationHandler).Methods("POST")
+		router.HandleFunc("/", controller.HomeHandler)
 
-		router.HandleFunc("/auth", controller.AuthHandler).Methods("POST")
+		router.HandleFunc("/registration", controller.PostRegistrationHandler).Methods("POST")
+		router.HandleFunc("/registration", controller.GetRegistrationHandler).Methods("GET")
+
+		router.HandleFunc("/auth", controller.GetAuthHandler).Methods("GET")
+		router.HandleFunc("/auth", controller.PostAuthHandler).Methods("POST")
 
 		ImportantInfo := router.Host("localhost:8080").Subrouter()
 		ImportantInfo.Use(controller.Service.AuthMiddleware)
