@@ -72,13 +72,80 @@ func (srv Service) CreateRefreshToken(temp struct {
 	return RefreshToken.SignedString(secretKey)
 }
 
-func (srv Service) GetTokens(r *http.Request) (string, string, error) {
-	accessToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-	refreshCookie, err := r.Cookie("refresh_token")
+func (srv Service) GetTokens(r *http.Request) (*jwt.Token, *jwt.Token, error) {
+	AccessTokenString := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	RefreshCookieString, err := r.Cookie("refresh_token")
 	if err != nil {
-		return "", "", err
+		return nil, nil, err
 	}
-	return accessToken, refreshCookie.Value, nil
+
+	AccessToken, err := srv.ParseToken(AccessTokenString)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	RefreshToken, err := srv.ParseToken(RefreshCookieString.Value)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return AccessToken, RefreshToken, nil
 }
 
+func (srv Service) ParseToken(tokenString string) (*jwt.Token, error) {
+    return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+        return secretKey, nil
+    })
+}
 
+func (srv Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request){
+		AccessToken, RefreshToken, err := srv.GetTokens(r)
+		if err != nil{
+			panic(err)
+		}
+		if AccessToken.Valid{
+			next(w, r)
+		} else if RefreshToken.Valid{
+			var temp struct {
+				UserName string
+				Password string
+			}
+
+			claims, ok := RefreshToken.Claims.(jwt.MapClaims)
+			if !ok{
+				panic("МЫ НЕ МОЖЕМ ВЫТАЩИТЬ КЛАЙМЫ")
+			}
+
+			UserName, ok := claims["UserName"]
+			if !ok{
+				panic("МЫ НЕ МОЖЕМ ВЫТАЩИТЬ UserName")
+			}
+
+			Password, ok := claims["Password"]
+			if !ok{
+				panic("МЫ НЕ МОЖЕМ ВЫТАЩИТЬ Password")
+			}
+
+			temp.UserName = UserName.(string)
+			temp.Password = Password.(string)
+
+			AccessToken, _ := srv.CreateAcessToken(temp)
+			RefreshToken, _ := srv.CreateRefreshToken(temp)
+
+			w.Header().Set("Authorization", "Bearer "+AccessToken)
+			http.SetCookie(w, &http.Cookie{
+				Name:     "refresh_token",
+				Value:    RefreshToken,
+				HttpOnly: true,
+				Secure:   true,
+				Path:     "/auth/refresh",
+				MaxAge:   60 * 60 * 24 * 7,
+			})
+
+
+		} else{
+			
+		}
+	}
+}

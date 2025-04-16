@@ -22,16 +22,17 @@ func main() {
 	_ = container.Provide(repository.NewDB)
 
 	container.Invoke(func(controller *controller.Controller) {
-		Registration := mux.NewRouter()
+		router := mux.NewRouter()
 
-		Registration.HandleFunc("/registration", controller.RegistrationHandler).Methods("POST")
+		router.HandleFunc("/registration", controller.RegistrationHandler).Methods("POST")
 
-		ImportantInfo := mux.NewRouter()
+		router.HandleFunc("/auth", controller.AuthHandler).Methods("POST")
+
+		ImportantInfo := router.Host("localhost:8080").Subrouter()
 
 		ImportantInfo.HandleFunc("/info", controller.InfoHandler)
 
 		fmt.Println("Server listening...")
-		http.ListenAndServe(":8080", Registration)
-		http.ListenAndServe(":8080", ImportantInfo)
+		http.ListenAndServe(":8080", router)
 	})
 }
