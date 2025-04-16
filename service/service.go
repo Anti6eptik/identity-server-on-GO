@@ -98,8 +98,8 @@ func (srv Service) ParseToken(tokenString string) (*jwt.Token, error) {
     })
 }
 
-func (srv Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc{
-	return func(w http.ResponseWriter, r *http.Request){
+func (srv Service) AuthMiddleware(next http.Handler) http.Handler{
+	return http.HandleFunc(func(w http.ResponseWriter, r *http.Request){
 		AccessToken, RefreshToken, err := srv.GetTokens(r)
 		if err != nil{
 			panic(err)
@@ -147,7 +147,7 @@ func (srv Service) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc{
 		} else{
 			
 		}
-	}
+	})
 }
 
 func (srv Service) Auth(){
