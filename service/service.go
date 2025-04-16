@@ -76,17 +76,17 @@ func (srv Service) CreateRefreshToken(temp struct {
 func (srv Service) GetTokens(r *http.Request) (*jwt.Token, *jwt.Token, error) {
     authHeader := r.Header.Get("Authorization")
     if authHeader == "" {
-        return nil, nil, fmt.Errorf("Нет заголовка")
+        return nil, nil, fmt.Errorf("нет заголовка")
     }
     
     AccessTokenString := strings.TrimPrefix(authHeader, "Bearer ")
     if AccessTokenString == authHeader {
-        return nil, nil, fmt.Errorf("Нет Bearer")
+        return nil, nil, fmt.Errorf("нет Bearer")
     }
 
     RefreshCookieString, err := r.Cookie("refresh_token")
     if err != nil {
-        return nil, nil, fmt.Errorf("Тотальное отсутствие куки", err)
+        return nil, nil, err
     }
 
 	AccessToken, err := srv.ParseToken(AccessTokenString)
