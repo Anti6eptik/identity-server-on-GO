@@ -1,7 +1,6 @@
 package service
 
 import (
-	
 	"fmt"
 	"net/http"
 	"strings"
@@ -17,17 +16,22 @@ import (
 var secretKey = []byte("TIMOFEY_NE_LUBIT_GRECHKU")
 
 type Service struct {
-	repository *repository.Repository
+	repository          *repository.Repository
+	HashPasswordService *HashPasswordService
 }
 
-func NewService(repo *repository.Repository) *Service {
+func NewService(repo *repository.Repository, hashPasswordService *HashPasswordService) *Service {
 	return &Service{
-		repository: repo,
+		repository:          repo,
+		HashPasswordService: hashPasswordService,
 	}
 }
 
-func (srv Service) Registration(temp struct{UserName string; Password string}) (models.Tokens) {
-	
+func (srv Service) Registration(temp struct {
+	UserName string
+	Password string
+}) models.Tokens {
+
 	srv.repository.Registration(temp)
 
 	AccessToken, _ := srv.CreateAcessToken(temp)
@@ -178,9 +182,12 @@ func (srv Service) AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (srv Service) Auth(temp struct{UserName string; Password string}) (models.Tokens, error){
+func (srv Service) Auth(temp struct {
+	UserName string
+	Password string
+}) (models.Tokens, error) {
 	var tokens models.Tokens
-	if srv.repository.Auth(temp) {
+	if srv.HashPasswordService.CheckPasswordHash(temp.Password, srv.repository.GetPasswordHash(temp)) {
 		AccessToken, err := srv.CreateAcessToken(temp)
 		if err != nil {
 			panic(err)

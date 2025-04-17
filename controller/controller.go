@@ -10,14 +10,12 @@ import (
 )
 
 type Controller struct {
-	Service             *service.Service
-	HashPasswordService *service.HashPasswordService
+	Service *service.Service
 }
 
-func NewController(service *service.Service, hashPasswordService *service.HashPasswordService) *Controller {
+func NewController(service *service.Service) *Controller {
 	return &Controller{
-		Service:             service,
-		HashPasswordService: hashPasswordService,
+		Service: service,
 	}
 }
 
@@ -37,7 +35,7 @@ func (c Controller) PostRegistrationHandler(w http.ResponseWriter, r *http.Reque
 		panic(err)
 	}
 
-	HashedPassword, err := c.HashPasswordService.HashPassword(temp.Password)
+	HashedPassword, err := c.Service.HashPasswordService.HashPassword(temp.Password)
 
 	if err != nil {
 		panic(err)

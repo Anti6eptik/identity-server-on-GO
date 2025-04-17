@@ -34,22 +34,19 @@ func (r Repository) Registration(new_user struct {
 	}
 }
 
-func (r Repository) Auth(user struct {
+func (r Repository) GetPasswordHash(user struct {
 	UserName string
 	Password string
-}) bool {
+}) string {
 	var temp struct {
 		UserName string
 		Password string
 	}
 	row := r.DB.QueryRow("SELECT * FROM users WHERE UserName=$1", user.UserName)
-	
+
 	err := row.Scan(&temp.UserName, &temp.Password)
 	if err != nil {
-		return false
+		return ""
 	}
-	if temp == user{
-		return true
-	}
-	return false
+	return temp.Password
 }
