@@ -1,15 +1,17 @@
 package service
 
 import (
-	"encoding/json"
+	
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
-	"fmt"
 
 	"Sinekod/repository"
 
 	"github.com/golang-jwt/jwt/v5"
+
+	"Sinekod/models"
 )
 
 var secretKey = []byte("TIMOFEY_NE_LUBIT_GRECHKU")
@@ -24,23 +26,18 @@ func NewService(repo *repository.Repository) *Service {
 	}
 }
 
-func (srv Service) Registration(r *http.Request) (string, string, error) {
-	var temp struct {
-		UserName string
-		Password string
-	}
-
-	err := json.NewDecoder(r.Body).Decode(&temp)
-	if err != nil {
-		return "", "", err
-	}
-
+func (srv Service) Registration(temp struct{UserName string; Password string}) (models.Tokens) {
+	
 	srv.repository.Registration(temp)
 
 	AccessToken, _ := srv.CreateAcessToken(temp)
 	RefreshToken, _ := srv.CreateRefreshToken(temp)
 
-	return AccessToken, RefreshToken, nil
+	var tokens models.Tokens
+	tokens.AccessToken = AccessToken
+	tokens.RefreshToken = RefreshToken
+
+	return tokens
 }
 
 func (srv Service) CreateAcessToken(temp struct {
@@ -76,21 +73,21 @@ func (srv Service) CreateRefreshToken(temp struct {
 }
 
 func (srv Service) GetTokens(r *http.Request) (*jwt.Token, *jwt.Token, error) {
-    authHeader := r.Header.Get("Authorization")
-    if authHeader == "" {
-        return nil, nil, fmt.Errorf("нет заголовка")
-    }
-    
-    AccessTokenString := strings.TrimPrefix(authHeader, "Bearer ")
-    if AccessTokenString == authHeader {
-        return nil, nil, fmt.Errorf("нет Bearer")
-    }
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return nil, nil, fmt.Errorf("нет заголовка")
+	}
 
-    RefreshCookieString, err := r.Cookie("refresh_token")
-    if err != nil {
+	AccessTokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	if AccessTokenString == authHeader {
+		return nil, nil, fmt.Errorf("нет Bearer")
+	}
+
+	RefreshCookieString, err := r.Cookie("refresh_token")
+	if err != nil {
 		fmt.Print(err)
-        return nil, nil, err
-    }
+		return nil, nil, err
+	}
 
 	AccessToken, err := srv.ParseToken(AccessTokenString)
 	if err != nil {
@@ -181,15 +178,8 @@ func (srv Service) AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (srv Service) Auth(w http.ResponseWriter, r *http.Request) {
-	var temp struct {
-		UserName string
-		Password string
-	}
-	err := json.NewDecoder(r.Body).Decode(&temp)
-	if err != nil {
-		panic(err)
-	}
+func (srv Service) Auth(temp struct{UserName string; Password string}) (models.Tokens, error){
+	var tokens models.Tokens
 	if srv.repository.Auth(temp) {
 		AccessToken, err := srv.CreateAcessToken(temp)
 		if err != nil {
@@ -199,14 +189,10 @@ func (srv Service) Auth(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		w.Header().Set("Authorization", "Bearer "+AccessToken)
-		http.SetCookie(w, &http.Cookie{
-			Name:     "refresh_token",
-			Value:    RefreshToken,
-			HttpOnly: true,
-			Secure:   true,
-			Path:     "/auth/refresh",
-			MaxAge:   60 * 60 * 24 * 7,
-		})
+		tokens.AccessToken = AccessToken
+		tokens.RefreshToken = RefreshToken
+
+		return tokens, nil
 	}
+	return tokens, fmt.Errorf("ошибка авторизации")
 }

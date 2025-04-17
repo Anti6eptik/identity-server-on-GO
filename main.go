@@ -17,8 +17,12 @@ func main() {
 	container := dig.New()
 
 	_ = container.Provide(controller.NewController)
+
 	_ = container.Provide(service.NewService)
+	_ = container.Provide(service.NewHashPasswordService)
+
 	_ = container.Provide(repository.NewRepository)
+
 	_ = container.Provide(repository.NewDB)
 
 	container.Invoke(func(controller *controller.Controller) {
@@ -28,9 +32,9 @@ func main() {
 
 		router.HandleFunc("/auth", controller.PostAuthHandler).Methods("POST")
 
-		ImportantInfo := router.Host("localhost:8080").Subrouter()
-		ImportantInfo.Use(controller.Service.AuthMiddleware)
-		ImportantInfo.HandleFunc("/info", controller.InfoHandler).Methods("GET")
+		SecretInfoRouter := router.PathPrefix("/info").Subrouter()
+		SecretInfoRouter.Use(controller.Service.AuthMiddleware)
+		SecretInfoRouter.HandleFunc("/info", controller.InfoHandler).Methods("GET")
 
 		fmt.Println("Server listening...")
 		http.ListenAndServe(":8080", router)

@@ -42,7 +42,8 @@ func (r Repository) Auth(user struct {
 		UserName string
 		Password string
 	}
-	row := r.DB.QueryRow("SELECT * FROM users WHERE UserName=$1, Password=$2", user.UserName, user.Password)
+	row := r.DB.QueryRow("SELECT * FROM users WHERE UserName=$1", user.UserName)
+	
 	err := row.Scan(&temp.UserName, &temp.Password)
 	if err != nil {
 		return false
