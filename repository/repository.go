@@ -43,8 +43,8 @@ func (r Repository) GetPasswordHash(user struct {
 		Password string
 	}
 	row := r.DB.QueryRow("SELECT * FROM users WHERE UserName=$1", user.UserName)
-
-	err := row.Scan(&temp.UserName, &temp.Password)
+	var id int
+	err := row.Scan(&id, &temp.UserName, &temp.Password)
 	if err != nil {
 		return ""
 	}
