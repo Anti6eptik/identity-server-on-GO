@@ -34,7 +34,7 @@ func main() {
 
 		SecretInfoRouter := router.PathPrefix("/info").Subrouter()
 		SecretInfoRouter.Use(controller.Service.AuthMiddleware)
-		SecretInfoRouter.HandleFunc("/info", controller.InfoHandler).Methods("GET")
+		SecretInfoRouter.HandleFunc("/", controller.InfoHandler).Methods("GET")
 
 		fmt.Println("Server listening...")
 		http.ListenAndServe(":8080", router)

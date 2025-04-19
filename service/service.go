@@ -1,12 +1,12 @@
 package service
 
 import (
+	"Sinekod/repository"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
-
-	"Sinekod/repository"
 
 	"github.com/golang-jwt/jwt/v5"
 
@@ -53,8 +53,6 @@ func (srv Service) CreateAcessToken(temp struct {
 		"Password": temp.Password,
 		"exp":      time.Now().Add(time.Minute * 15).Unix(),
 	}
-
-	fmt.Print(AccessCclaims)
 
 	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, AccessCclaims)
 
@@ -164,13 +162,19 @@ func (srv Service) AuthMiddleware(next http.Handler) http.Handler {
 				return
 			}
 
-			w.Header().Set("Authorization", "Bearer "+newAccessToken)
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(models.TokenModel{Token: newAccessToken}); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			http.SetCookie(w, &http.Cookie{
 				Name:     "refresh_token",
 				Value:    newRefreshToken,
 				HttpOnly: true,
-				Secure:   true,
+				//Secure:   true,
 				Path:     "/",
+				SameSite: http.SameSiteNoneMode,
+				Expires:  time.Now().Add(7 * 24 * time.Hour),
 				MaxAge:   60 * 60 * 24 * 7,
 			})
 
