@@ -54,6 +54,8 @@ func (srv Service) CreateAcessToken(temp struct {
 		"exp":      time.Now().Add(time.Minute * 15).Unix(),
 	}
 
+	fmt.Println(AccessCclaims)
+
 	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, AccessCclaims)
 
 	return AccessToken.SignedString(secretKey)
@@ -68,6 +70,8 @@ func (srv Service) CreateRefreshToken(temp struct {
 		"Password": temp.Password,
 		"exp":      time.Now().Add(time.Hour * 168).Unix(),
 	}
+
+	fmt.Println(RefreshClaims)
 
 	RefreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, RefreshClaims)
 
