@@ -30,18 +30,26 @@ func NewService(repo *repository.Repository, hashPasswordService *HashPasswordSe
 func (srv Service) Registration(temp struct {
 	UserName string
 	Password string
-}) models.Tokens {
-
-	srv.repository.Registration(temp)
-
-	AccessToken, _ := srv.CreateAcessToken(temp)
-	RefreshToken, _ := srv.CreateRefreshToken(temp)
-
+}) (models.Tokens, error) {
 	var tokens models.Tokens
+	err := srv.repository.Registration(temp)
+	if err != nil{
+		return tokens, err
+	}
+
+	AccessToken, err := srv.CreateAcessToken(temp)
+	if err != nil{
+		return tokens, err
+	}
+	RefreshToken, err := srv.CreateRefreshToken(temp)
+	if err != nil{
+		return tokens, err
+	}
+	
 	tokens.AccessToken = AccessToken
 	tokens.RefreshToken = RefreshToken
 
-	return tokens
+	return tokens, nil
 }
 
 func (srv Service) CreateAcessToken(temp struct {
@@ -53,8 +61,6 @@ func (srv Service) CreateAcessToken(temp struct {
 		"Password": temp.Password,
 		"exp":      time.Now().Add(time.Minute * 15).Unix(),
 	}
-
-	fmt.Println(AccessCclaims)
 
 	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, AccessCclaims)
 
@@ -195,14 +201,18 @@ func (srv Service) Auth(temp struct {
 	Password string
 }) (models.Tokens, error) {
 	var tokens models.Tokens
-	if srv.HashPasswordService.CheckPasswordHash(temp.Password, srv.repository.GetPasswordHash(temp)) {
+	RightPassword, err := srv.repository.GetPasswordHash(temp)
+	if err != nil{
+		return tokens, err
+	}
+	if srv.HashPasswordService.CheckPasswordHash(temp.Password, RightPassword) {
 		AccessToken, err := srv.CreateAcessToken(temp)
 		if err != nil {
-			panic(err)
+			return tokens, err
 		}
 		RefreshToken, err := srv.CreateRefreshToken(temp)
 		if err != nil {
-			panic(err)
+			return tokens, err
 		}
 		tokens.AccessToken = AccessToken
 		tokens.RefreshToken = RefreshToken

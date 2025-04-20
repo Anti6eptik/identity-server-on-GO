@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 
 	_ "modernc.org/sqlite"
 )
@@ -27,17 +28,18 @@ func NewDB() *sql.DB {
 func (r Repository) Registration(new_user struct {
 	UserName string
 	Password string
-}) {
+}) error {
 	_, err := r.DB.Exec("INSERT INTO users (UserName, Password) VALUES ($1, $2)", new_user.UserName, new_user.Password)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("ошибка базы данных")
 	}
+	return nil
 }
 
 func (r Repository) GetPasswordHash(user struct {
 	UserName string
 	Password string
-}) string {
+}) (string, error){
 	var temp struct {
 		UserName string
 		Password string
@@ -46,7 +48,7 @@ func (r Repository) GetPasswordHash(user struct {
 	var id int
 	err := row.Scan(&id, &temp.UserName, &temp.Password)
 	if err != nil {
-		return ""
+		return "", err
 	}
-	return temp.Password
+	return temp.Password, nil
 }

@@ -32,22 +32,26 @@ func (c Controller) PostRegistrationHandler(w http.ResponseWriter, r *http.Reque
 
 	err := json.NewDecoder(r.Body).Decode(&temp)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	HashedPassword, err := c.Service.HashPasswordService.HashPassword(temp.Password)
 
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	temp.Password = HashedPassword
 
-	tokens := c.Service.Registration(temp)
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(models.TokenModel{Token: tokens.AccessToken}); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	tokens, err := c.Service.Registration(temp)
+
+	if err != nil{
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    tokens.RefreshToken,
@@ -58,6 +62,7 @@ func (c Controller) PostRegistrationHandler(w http.ResponseWriter, r *http.Reque
 		Expires:  time.Now().Add(7 * 24 * time.Hour),
 		MaxAge:   60 * 60 * 24 * 7,
 	})
+	json.NewEncoder(w).Encode(models.TokenModel{Token: tokens.AccessToken})
 }
 
 func (c Controller) PostAuthHandler(w http.ResponseWriter, r *http.Request) {
@@ -68,18 +73,16 @@ func (c Controller) PostAuthHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&temp)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	tokens, err := c.Service.Auth(temp)
 	if err != nil {
-		panic(err)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(models.TokenModel{Token: tokens.AccessToken}); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    tokens.RefreshToken,
@@ -90,19 +93,5 @@ func (c Controller) PostAuthHandler(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(7 * 24 * time.Hour),
 		MaxAge:   60 * 60 * 24 * 7,
 	})
+	json.NewEncoder(w).Encode(models.TokenModel{Token: tokens.AccessToken})
 }
-
-// СДЕЛАНО!
-// Реквест не должен уходить из контроллера декодирование на уровне контроллера
-// Secure не работает на нашем сервере
-// Access токен передаем через json в теле ответа, модель токен: response
-// пофиксиить куки, кеод в банскваде
-// Перед возвратом модели access токена надо написать w.Header().Set("Content-Type", "application/json")
-// Сменить хост на префикс
-// Шифровка пароля хэшем - хэш теперь сохраняться в БД, авторизацию я сделал
-
-// НЕ СДЕЛАНО :(
-// Добавить больше ретурнов
-// Даже с такими куками наш проект не работает(
-// Acess токен теперь зраниться в теле, атк как показывал руслан, но я не сделал так, чтобы на сервак брал этот токен из тела, а не из заголовков
-// У нас 1 большой сервис, а там и работа с токенами и работа с http все такое, его бы раскидать на TokenService и RegService ну и AuthSerivce
