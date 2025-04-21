@@ -5,11 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
-
 	"github.com/golang-jwt/jwt/v5"
-
 	"Sinekod/models"
 )
 
@@ -18,6 +15,7 @@ var secretKey = []byte("TIMOFEY_NE_LUBIT_GRECHKU")
 type Service struct {
 	repository          *repository.Repository
 	HashPasswordService *HashPasswordService
+	TokenService *TokenService
 }
 
 func NewService(repo *repository.Repository, hashPasswordService *HashPasswordService) *Service {
@@ -37,11 +35,11 @@ func (srv Service) Registration(temp struct {
 		return tokens, err
 	}
 
-	AccessToken, err := srv.CreateAcessToken(temp)
+	AccessToken, err := srv.TokenService.CreateAcessToken(temp)
 	if err != nil {
 		return tokens, err
 	}
-	RefreshToken, err := srv.CreateRefreshToken(temp)
+	RefreshToken, err := srv.TokenService.CreateRefreshToken(temp)
 	if err != nil {
 		return tokens, err
 	}
@@ -52,74 +50,10 @@ func (srv Service) Registration(temp struct {
 	return tokens, nil
 }
 
-func (srv Service) CreateAcessToken(temp struct {
-	UserName string
-	Password string
-}) (string, error) {
-	AccessCclaims := jwt.MapClaims{
-		"UserName": temp.UserName,
-		"Password": temp.Password,
-		"exp":      time.Now().Add(time.Minute * 15).Unix(),
-	}
-	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, AccessCclaims)
-
-	return AccessToken.SignedString(secretKey)
-}
-
-func (srv Service) CreateRefreshToken(temp struct {
-	UserName string
-	Password string
-}) (string, error) {
-	RefreshClaims := jwt.MapClaims{
-		"UserName": temp.UserName,
-		"Password": temp.Password,
-		"exp":      time.Now().Add(time.Hour * 168).Unix(),
-	}
-
-	RefreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, RefreshClaims)
-
-	return RefreshToken.SignedString(secretKey)
-}
-
-func (srv Service) GetTokens(r *http.Request) (*jwt.Token, *jwt.Token, error) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return nil, nil, fmt.Errorf("нет заголовка")
-	}
-
-	AccessTokenString := strings.TrimPrefix(authHeader, "Bearer ")
-	if AccessTokenString == authHeader {
-		return nil, nil, fmt.Errorf("нет Bearer")
-	}
-
-	RefreshCookieString, err := r.Cookie("refresh_token")
-	if err != nil {
-		fmt.Print(err)
-		return nil, nil, err
-	}
-
-	AccessToken, err := srv.ParseToken(AccessTokenString)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	RefreshToken, err := srv.ParseToken(RefreshCookieString.Value)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return AccessToken, RefreshToken, nil
-}
-
-func (srv Service) ParseToken(tokenString string) (*jwt.Token, error) {
-	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return secretKey, nil
-	})
-}
 
 func (srv Service) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		AccessToken, RefreshToken, err := srv.GetTokens(r)
+		AccessToken, RefreshToken, err := srv.TokenService.GetTokens(r)
 		if err != nil {
 			http.Redirect(w, r, "/auth", http.StatusFound)
 			return
@@ -157,13 +91,13 @@ func (srv Service) AuthMiddleware(next http.Handler) http.Handler {
 				Password: password,
 			}
 
-			newAccessToken, err := srv.CreateAcessToken(temp)
+			newAccessToken, err := srv.TokenService.CreateAcessToken(temp)
 			if err != nil {
 				http.Error(w, "Failed to create access token", http.StatusInternalServerError)
 				return
 			}
 
-			newRefreshToken, err := srv.CreateRefreshToken(temp)
+			newRefreshToken, err := srv.TokenService.CreateRefreshToken(temp)
 			if err != nil {
 				http.Error(w, "Failed to create refresh token", http.StatusInternalServerError)
 				return
@@ -209,11 +143,11 @@ func (srv Service) Auth(temp struct {
 		}
 		user.UserName = temp.UserName
 		user.Password = RightPassword
-		AccessToken, err := srv.CreateAcessToken(user)
+		AccessToken, err := srv.TokenService.CreateAcessToken(user)
 		if err != nil {
 			return tokens, err
 		}
-		RefreshToken, err := srv.CreateRefreshToken(user)
+		RefreshToken, err := srv.TokenService.CreateRefreshToken(user)
 		if err != nil {
 			return tokens, err
 		}

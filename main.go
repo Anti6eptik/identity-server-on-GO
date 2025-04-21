@@ -20,6 +20,7 @@ func main() {
 
 	_ = container.Provide(service.NewService)
 	_ = container.Provide(service.NewHashPasswordService)
+	_ = container.Provide(service.NewTokenService)
 
 	_ = container.Provide(repository.NewRepository)
 
@@ -31,7 +32,7 @@ func main() {
 		router.HandleFunc("/registration", controller.PostRegistrationHandler).Methods("POST")
 
 		router.HandleFunc("/auth", controller.PostAuthHandler).Methods("POST")
-		
+
 		router.HandleFunc("/", controller.HomeHandler)
 
 		SecretInfoRouter := router.PathPrefix("/info").Subrouter()
