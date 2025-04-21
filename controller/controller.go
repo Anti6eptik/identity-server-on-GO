@@ -24,6 +24,11 @@ func (c Controller) InfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (c Controller) HomeHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello, world!")
+	w.WriteHeader(http.StatusOK)
+}
+
 func (c Controller) PostRegistrationHandler(w http.ResponseWriter, r *http.Request) {
 	var temp struct {
 		UserName string

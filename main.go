@@ -31,6 +31,8 @@ func main() {
 		router.HandleFunc("/registration", controller.PostRegistrationHandler).Methods("POST")
 
 		router.HandleFunc("/auth", controller.PostAuthHandler).Methods("POST")
+		
+		router.HandleFunc("/", controller.HomeHandler)
 
 		SecretInfoRouter := router.PathPrefix("/info").Subrouter()
 		SecretInfoRouter.Use(controller.Service.AuthMiddleware)
